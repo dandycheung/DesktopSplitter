@@ -10,6 +10,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DesktopSplitterVdd", "drive
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DesktopSplitter", "app\DesktopSplitter.csproj", "{3D5E8C77-2B4F-4B7A-8F63-9A0C1D2E4F58}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DesktopSplitter.Native", "app-native\DesktopSplitter.vcxproj", "{A7C4E21B-8D93-4F11-9B6A-2E5C8D1F0A44}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -26,6 +28,10 @@ Global
 		{B41C7A6D-6E52-4A2C-9F1B-3C08D5E9A177}.Release|x64.Build.0 = Release|x64
 		{6F1B2C48-9D2E-4E5A-9C71-1A4E5B7D3F02}.Debug|x64.ActiveCfg = Debug|x64
 		{6F1B2C48-9D2E-4E5A-9C71-1A4E5B7D3F02}.Release|x64.ActiveCfg = Release|x64
+		{A7C4E21B-8D93-4F11-9B6A-2E5C8D1F0A44}.Debug|x64.ActiveCfg = Debug|x64
+		{A7C4E21B-8D93-4F11-9B6A-2E5C8D1F0A44}.Debug|x64.Build.0 = Debug|x64
+		{A7C4E21B-8D93-4F11-9B6A-2E5C8D1F0A44}.Release|x64.ActiveCfg = Release|x64
+		{A7C4E21B-8D93-4F11-9B6A-2E5C8D1F0A44}.Release|x64.Build.0 = Release|x64
 		{3D5E8C77-2B4F-4B7A-8F63-9A0C1D2E4F58}.Debug|x64.ActiveCfg = Debug|Any CPU
 		{3D5E8C77-2B4F-4B7A-8F63-9A0C1D2E4F58}.Debug|x64.Build.0 = Debug|Any CPU
 		{3D5E8C77-2B4F-4B7A-8F63-9A0C1D2E4F58}.Release|x64.ActiveCfg = Release|Any CPU

@@ -3,7 +3,7 @@
 #   - compositor (dscomp.exe)        : VS C++ (v143+)
 #   - installer/devcreate            : VS C++ (v143+)
 #   - installer/edid-override        : VS C++ (v143+)
-#   - app (DesktopSplitter.exe)      : .NET SDK 8+
+#   - app (DesktopSplitter.exe)      : native Win32/TWL (app-native)
 #   - driver (DesktopSplitterVdd)    : only if the WDK is installed
 #   - installer/setup                : only if the signed driver package exists
 #
@@ -127,9 +127,13 @@ Write-Host "  generated build\generated\{Version.props, Version.h, version.txt}"
 $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
 if (-not (Test-Path $vswhere)) { throw "vswhere.exe not found - install Visual Studio 2022+" }
 # Use 64-bit MSBuild: the WDK's InfVerif step ships no x86 binary and fails under 32-bit MSBuild.
-$msbuild = & $vswhere -latest -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\amd64\MSBuild.exe | Select-Object -First 1
-if (-not $msbuild) { $msbuild = & $vswhere -latest -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe | Select-Object -First 1 }
+$msbuild = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\amd64\MSBuild.exe | Select-Object -First 1
+if (-not $msbuild) { $msbuild = & $vswhere -latest -products * -find MSBuild\**\Bin\amd64\MSBuild.exe | Select-Object -First 1 }
+if (-not $msbuild) { $msbuild = & $vswhere -latest -products * -find MSBuild\**\Bin\MSBuild.exe | Select-Object -First 1 }
 if (-not $msbuild) { throw "MSBuild not found" }
+
+# Chinese Windows (CP936): treat UTF-8 sources as UTF-8 so C4819 is not fatal under TreatWarningAsError.
+$env:CL = '/utf-8'
 
 Write-Host "== compositor (dscomp) ==" -ForegroundColor Cyan
 & $msbuild "$root\compositor\dscomp.vcxproj" /p:Configuration=$Configuration /p:Platform=x64 /v:m /nologo
@@ -144,8 +148,8 @@ Write-Host "== installer/edid-override ==" -ForegroundColor Cyan
 & $msbuild "$root\installer\edid-override\edidoverride.vcxproj" /p:Configuration=$Configuration /p:Platform=x64 /v:m /nologo
 if ($LASTEXITCODE -ne 0) { throw "edidoverride build failed" }
 
-Write-Host "== app (DesktopSplitter) ==" -ForegroundColor Cyan
-dotnet build "$root\app\DesktopSplitter.csproj" -c $Configuration --nologo
+Write-Host "== app (DesktopSplitter, native TWL) ==" -ForegroundColor Cyan
+& $msbuild "$root\app-native\DesktopSplitter.vcxproj" /p:Configuration=$Configuration /p:Platform=x64 /v:m /nologo
 if ($LASTEXITCODE -ne 0) { throw "app build failed" }
 
 # Driver: needs the WDK (IddCx headers + WindowsUserModeDriver toolset)
@@ -179,7 +183,7 @@ if ($pkgMissing) {
     Write-Warning "  Build the driver Release|x64 first; sign it with installer\sign-dev.ps1 if needed."
 } else {
     Write-Host "== installer/setup (DesktopSplitterSetup) ==" -ForegroundColor Cyan
-    Write-Host "   (publishes the app self-contained and embeds ~140 MB of payload - this is slow)"
+    Write-Host "   (stages the native control app plus compositor / helpers)"
     & $msbuild "$root\installer\setup\DesktopSplitterSetup.vcxproj" /p:Configuration=$Configuration /p:Platform=x64 /v:m /nologo
     if ($LASTEXITCODE -ne 0) { throw "setup build failed" }
     $setupBuilt = $true
@@ -205,15 +209,11 @@ Write-Host "  compositor : compositor\build\x64\$Configuration\dscomp.exe"
 Write-Host "  devcreate  : installer\devcreate\bin\x64\$Configuration\devcreate.exe"
 Write-Host "  edidoverr. : installer\edid-override\build\x64\$Configuration\edidoverride.exe"
 
-# The app's target framework moves (net8.0-windows -> net8.0-windows10.0.19041.0
-# for WinRT), so resolve the real output rather than hardcoding a TFM.
-$appExe = Get-ChildItem -Path (Join-Path $root "app\bin\$Configuration") -Filter 'DesktopSplitter.exe' `
-    -Recurse -File -ErrorAction SilentlyContinue |
-    Sort-Object LastWriteTime -Descending | Select-Object -First 1
-if ($appExe) {
-    Write-Host ("  app        : " + $appExe.FullName.Substring($root.Length + 1))
+$appExePath = Join-Path $root "app-native\build\x64\$Configuration\DesktopSplitter.exe"
+if (Test-Path $appExePath) {
+    Write-Host ("  app        : " + $appExePath.Substring($root.Length + 1))
 } else {
-    Write-Host "  app        : app\bin\$Configuration\<tfm>\DesktopSplitter.exe"
+    Write-Host "  app        : app-native\build\x64\$Configuration\DesktopSplitter.exe"
 }
 if ($setupBuilt) {
     Write-Host "  setup      : installer\setup\bin\x64\$Configuration\DesktopSplitterSetup.exe" -ForegroundColor Green

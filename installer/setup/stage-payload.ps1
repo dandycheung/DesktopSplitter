@@ -15,8 +15,8 @@
       installer exists to handle.
 
     PRODUCT FILES (installed into %ProgramFiles%\DesktopSplitter)
-      DesktopSplitter.exe  - the control app, published SELF-CONTAINED as a
-                             single file so target PCs need no .NET runtime
+      DesktopSplitter.exe  - the native TWL control app
+                             (app-native\build\x64\<Configuration>)
       dscomp.exe           - the compositor
       devcreate.exe        - device node helper
       edidoverride.exe     - EDID override + guarded-transaction helper. Must go
@@ -28,8 +28,8 @@
     is auditable.
 
 .PARAMETER SkipAppPublish
-    Reuse a previous publish in payload\ instead of running dotnet publish.
-    Useful when the app project is mid-edit.
+    Reuse a previously staged DesktopSplitter.exe in payload\ instead of
+    copying the freshly built native exe.
 #>
 [CmdletBinding()]
 param(
@@ -100,43 +100,19 @@ foreach ($item in $resolved) {
 
 # =========================== product files =================================
 
-# --- control app: self-contained single file ---
+# --- control app: native TWL exe ---
 $appExe = Join-Path $OutDir 'DesktopSplitter.exe'
 if ($SkipAppPublish) {
     if (-not (Test-Path $appExe)) { Fail "-SkipAppPublish given but $appExe does not exist." }
-    Write-Host "stage-payload : reusing existing app publish (SkipAppPublish)"
+    Write-Host "stage-payload : reusing existing staged app (SkipAppPublish)"
 } else {
-    $publishDir = Join-Path $scriptRoot 'obj\apppublish'
-    if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force -ErrorAction SilentlyContinue }
-
-    Write-Host "stage-payload : publishing the control app self-contained (this takes a while)..."
-    $proj = Join-Path $repoRoot 'app\DesktopSplitter.csproj'
-    if (-not (Test-Path $proj)) { Fail "app project not found: $proj" }
-
-    # IncludeNativeLibrariesForSelfExtract folds the WPF native DLLs into the
-    # single file, so exactly one app binary needs embedding and installing.
-    & dotnet publish $proj -c $Configuration -r win-x64 --self-contained true `
-        -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
-        -p:DebugType=None -p:GenerateDocumentationFile=false `
-        -o $publishDir --nologo 2>&1 | ForEach-Object { Write-Host "    $_" }
-
-    if ($LASTEXITCODE -ne 0) {
-        Fail ("dotnet publish failed for the control app (exit $LASTEXITCODE).`n" +
-              "         Fix app\DesktopSplitter.csproj, or re-run with -SkipAppPublish to reuse the last publish.")
-    }
-
-    # `-o $publishDir` pins the output, so the app's target framework can change
-    # (net8.0-windows -> net8.0-windows10.0.19041.0 for WinRT) without touching
-    # this script. The recursive fallback covers an SDK that ever decides to
-    # nest the output under a TFM/RID folder anyway.
-    $built = Join-Path $publishDir 'DesktopSplitter.exe'
+    $built = Join-Path $repoRoot "app-native\build\x64\$Configuration\DesktopSplitter.exe"
     if (-not (Test-Path $built)) {
-        $found = Get-ChildItem -Path $publishDir -Filter 'DesktopSplitter.exe' -Recurse -File -ErrorAction SilentlyContinue |
-            Sort-Object LastWriteTime -Descending | Select-Object -First 1
-        if (-not $found) { Fail "dotnet publish produced no DesktopSplitter.exe under $publishDir" }
-        $built = $found.FullName
+        Fail ("native control app not found: $built`n" +
+              "         Build it first:  msbuild app-native\DesktopSplitter.vcxproj /p:Configuration=$Configuration /p:Platform=x64`n" +
+              "         (or re-run with -SkipAppPublish to reuse a previously staged exe).")
     }
-    Write-Host "stage-payload : app publish -> $built"
+    Write-Host "stage-payload : native app -> $built"
     Copy-Item -LiteralPath $built -Destination $appExe -Force
 }
 

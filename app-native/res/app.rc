@@ -1,0 +1,45 @@
+#include <windows.h>
+#include "resource.h"
+#include "Version.h"
+
+#ifndef DS_VERSION_COMMA
+#define DS_VERSION_COMMA 0,0,0,0
+#define DS_VERSION_STR4  "0.0.0.0"
+#define DS_VERSION_STR   "0.0.0"
+#endif
+
+IDI_APP ICON "app.ico"
+
+1 24 "../app.manifest"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION DS_VERSION_COMMA
+PRODUCTVERSION DS_VERSION_COMMA
+FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+FILEFLAGS 0x1L
+#else
+FILEFLAGS 0x0L
+#endif
+FILEOS 0x40004L
+FILETYPE 0x1L
+FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName", "DesktopSplitter"
+            VALUE "FileDescription", "DesktopSplitter control app"
+            VALUE "FileVersion", DS_VERSION_STR4
+            VALUE "InternalName", "DesktopSplitter"
+            VALUE "OriginalFilename", "DesktopSplitter.exe"
+            VALUE "ProductName", "DesktopSplitter"
+            VALUE "ProductVersion", DS_VERSION_STR
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END

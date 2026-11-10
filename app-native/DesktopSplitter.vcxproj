@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <ProjectGuid>{A7C4E21B-8D93-4F11-9B6A-2E5C8D1F0A44}</ProjectGuid>
+    <RootNamespace>DesktopSplitter</RootNamespace>
+    <ProjectName>DesktopSplitter.Native</ProjectName>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Release'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings" />
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+
+  <PropertyGroup>
+    <OutDir>$(ProjectDir)build\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)build\obj\$(Platform)\$(Configuration)\</IntDir>
+    <TargetName>DesktopSplitter</TargetName>
+    <GenerateManifest>false</GenerateManifest>
+    <ExternalWarningLevel>TurnOff</ExternalWarningLevel>
+    <ExternalIncludeDirectories>$(ProjectDir)..\..\TWL\include;$(SolutionDir)..\TWL\include;%(ExternalIncludeDirectories)</ExternalIncludeDirectories>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <WarningLevel>Level4</WarningLevel>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)res;$(ProjectDir)..\..\TWL\include;$(SolutionDir)..\TWL\include;$(ProjectDir)..\shared;$(ProjectDir)..\build\generated;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>TWL_DPI_AWARE=1;UNICODE;_UNICODE;WIN32_LEAN_AND_MEAN;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>comctl32.lib;gdiplus.lib;cfgmgr32.lib;setupapi.lib;dwmapi.lib;uxtheme.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(ProjectDir)res;$(ProjectDir)..\build\generated;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>UNICODE;_UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <PreBuildEvent>
+      <Command>if not exist "$(ProjectDir)..\build\generated" mkdir "$(ProjectDir)..\build\generated"
+if not exist "$(ProjectDir)..\build\generated\Version.h" copy /Y "$(ProjectDir)res\VersionFallback.h" "$(ProjectDir)..\build\generated\Version.h"</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+    <ClCompile>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Optimization>Disabled</Optimization>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <ClCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <ItemGroup>
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\ui\Theme.cpp" />
+    <ClCompile Include="src\ui\Controller.cpp" />
+    <ClCompile Include="src\ui\Dialogs.cpp" />
+    <ClCompile Include="src\ui\MainWindow.cpp" />
+    <ClCompile Include="src\models\LayoutGeometry.cpp" />
+    <ClCompile Include="src\models\LayoutDefinition.cpp" />
+    <ClCompile Include="src\models\CountdownPlacement.cpp" />
+    <ClCompile Include="src\util\JsonIo.cpp" />
+    <ClCompile Include="src\services\SettingsStore.cpp" />
+    <ClCompile Include="src\services\StartupRegistration.cpp" />
+    <ClCompile Include="src\services\CompositorLauncher.cpp" />
+    <ClCompile Include="src\services\HidingStatus.cpp" />
+    <ClCompile Include="src\services\SpecializationSupport.cpp" />
+    <ClCompile Include="src\services\ApplyService.cpp" />
+    <ClCompile Include="src\services\SplitSuspensionWatcher.cpp" />
+    <ClCompile Include="src\interop\DriverClient.cpp" />
+    <ClCompile Include="src\interop\EdidReader.cpp" />
+    <ClCompile Include="src\interop\DisplayConfig.cpp" />
+    <ClCompile Include="src\interop\DisplayArranger.cpp" />
+    <ClCompile Include="src\interop\MonitorSpecialization.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\Common.h" />
+    <ClInclude Include="src\ui\Theme.h" />
+    <ClInclude Include="src\ui\Controller.h" />
+    <ClInclude Include="src\ui\Dialogs.h" />
+    <ClInclude Include="src\ui\MainWindow.h" />
+    <ClInclude Include="src\models\Types.h" />
+    <ClInclude Include="src\models\AppSettings.h" />
+    <ClInclude Include="src\models\LayoutGeometry.h" />
+    <ClInclude Include="src\models\LayoutDefinition.h" />
+    <ClInclude Include="src\util\JsonIo.h" />
+    <ClInclude Include="src\services\SettingsStore.h" />
+    <ClInclude Include="src\services\StartupRegistration.h" />
+    <ClInclude Include="src\services\CompositorLauncher.h" />
+    <ClInclude Include="src\services\HidingStatus.h" />
+    <ClInclude Include="src\services\SpecializationSupport.h" />
+    <ClInclude Include="src\services\ApplyService.h" />
+    <ClInclude Include="src\services\SplitSuspensionWatcher.h" />
+    <ClInclude Include="src\interop\DriverClient.h" />
+    <ClInclude Include="src\interop\EdidReader.h" />
+    <ClInclude Include="src\interop\DisplayConfig.h" />
+    <ClInclude Include="src\interop\DisplayArranger.h" />
+    <ClInclude Include="src\interop\MonitorSpecialization.h" />
+    <ClInclude Include="res\resource.h" />
+    <ClInclude Include="res\VersionFallback.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="res\app.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="app.manifest" />
+    <None Include="res\app.ico" />
+  </ItemGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets" />
+</Project>
