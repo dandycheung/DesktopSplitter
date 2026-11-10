@@ -1,4 +1,4 @@
-<Window x:Class="DesktopSplitter.MainWindow"
+﻿<Window x:Class="DesktopSplitter.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="DesktopSplitter"
@@ -144,10 +144,10 @@
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="W" VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}"/>
                         <TextBox Width="66" Margin="6,0,10,0"
-                                 Text="{Binding WidthText, UpdateSourceTrigger=PropertyChanged}"/>
+                                 Text="{Binding WidthText, Mode=OneWay}" TextChanged="SegmentWidth_TextChanged"/>
                         <TextBlock Text="H" VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}"/>
                         <TextBox Width="66" Margin="6,0,0,0"
-                                 Text="{Binding HeightText, UpdateSourceTrigger=PropertyChanged}"/>
+                                 Text="{Binding HeightText, Mode=OneWay}" TextChanged="SegmentHeight_TextChanged"/>
                     </StackPanel>
                     <TextBlock Text="{Binding Error}" Foreground="{StaticResource ErrorBrush}"
                                FontSize="10.5" Margin="0,5,0,0" TextWrapping="Wrap">
@@ -222,7 +222,7 @@
                     <Border Background="{StaticResource PanelBackground}" BorderBrush="{StaticResource PanelBorder}"
                             BorderThickness="1" CornerRadius="4" Padding="10,6">
                         <StackPanel>
-                            <TextBlock Text="MAX REFRESH — ALL ZONES RUN AT THIS RATE"
+                            <TextBlock Text="MAX REFRESH - ALL ZONES RUN AT THIS RATE"
                                        Foreground="{StaticResource MutedBrush}" FontSize="10" FontWeight="SemiBold"/>
                             <TextBlock Text="{Binding RefreshText}" FontFamily="Consolas" FontSize="13"
                                        Margin="0,2,0,0"/>
@@ -264,7 +264,7 @@
                     </ListBox.ItemsPanel>
                 </ListBox>
 
-                <TextBlock Text="ZONE EDITOR — DRAG THE BORDERS, OR TYPE EXACT SIZES BELOW"
+                <TextBlock Text="ZONE EDITOR - DRAG THE BORDERS, OR TYPE EXACT SIZES BELOW"
                            Style="{StaticResource SectionHeader}"/>
 
                 <Border Background="{StaticResource CanvasBackground}"
@@ -335,7 +335,7 @@
                     <StackPanel>
                         <TextBlock TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" FontSize="11.5"
                                    Margin="0,0,0,10"
-                                   Text="Removes the physical monitor from the Windows desktop entirely instead of just covering it — the same thing as Settings &gt; Advanced display &gt; &quot;Remove display from desktop&quot;. Enable only records the intent; the monitor is hidden during Apply, once segment 1 is primary, and it comes back automatically unless you confirm within 10 seconds. Revert always restores it."/>
+                                   Text="Removes the physical monitor from the Windows desktop entirely instead of just covering it - the same thing as Settings &gt; Advanced display &gt; &quot;Remove display from desktop&quot;. Enable only records the intent; the monitor is hidden during Apply, once segment 1 is primary, and it comes back automatically unless you confirm within 10 seconds. Revert always restores it."/>
 
                         <ItemsControl ItemsSource="{Binding Rows}">
                             <ItemsControl.ItemTemplate>
@@ -420,3 +420,4 @@
 
     </Grid>
 </Window>
+

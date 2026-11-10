@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Threading;
@@ -28,7 +28,7 @@ public interface ISpecializationUi
 
     /// <summary>
     /// Keep-or-revert countdown, shown once the compositor confirms it is presenting through the
-    /// hidden display. Returns true to keep. MUST resolve to false on its own timeout — the app
+    /// hidden display. Returns true to keep. MUST resolve to false on its own timeout - the app
     /// is the auto-revert authority.
     /// </summary>
     bool ConfirmKeep(MonitorInfo physical, int timeoutSeconds, CancellationToken ct);
@@ -43,7 +43,7 @@ public interface ISpecializationUi
 /// <summary>
 /// The "Keep these display settings?" countdown, mirroring what Windows shows after a resolution
 /// change. Called from a BACKGROUND thread and blocks; returns true to keep.
-/// MUST resolve to false when the countdown lapses — that timeout is the safety net for a change
+/// MUST resolve to false when the countdown lapses - that timeout is the safety net for a change
 /// that left the user unable to see or click anything.
 /// </summary>
 public interface IApplyConfirmer
@@ -141,7 +141,7 @@ public static class ApplyService
             applied = ApplyCore(request, log, ct, out snapshot);
         }
 
-        // g. "Keep these display settings?" — only for user-initiated applies. A change that
+        // g. "Keep these display settings?" - only for user-initiated applies. A change that
         //    leaves the user unable to see or click anything undoes itself when the countdown
         //    lapses, exactly like Windows' own resolution prompt.
         if (!request.PromptToConfirm || request.Confirmer is null) return applied;
@@ -155,7 +155,7 @@ public static class ApplyService
             return applied;
         }
 
-        log.Report("Change not confirmed — rolling back.");
+        log.Report("Change not confirmed - rolling back.");
         string restored = RollBackTo(snapshot, log, ct, request.SpecializationUi);
         return new ApplyResult
         {
@@ -194,7 +194,7 @@ public static class ApplyService
             .Select(m => m.DeviceName)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        // Remember which display was primary BEFORE we touch anything — Revert restores
+        // Remember which display was primary BEFORE we touch anything - Revert restores
         // exactly this monitor, which is not necessarily the one being split.
         (string previousPrimaryDevice, string previousPrimaryName) = CapturePreviousPrimary(before, log);
 
@@ -298,7 +298,7 @@ public static class ApplyService
 
         // e. Optionally hide the physical monitor, then launch the compositor.
         //    Ordering matters: the display must already be specialized when dscomp starts, and
-        //    only a NON-primary display can be specialized — which is exactly why this runs
+        //    only a NON-primary display can be specialized - which is exactly why this runs
         //    after segment 1 was promoted to primary in step c2.
         (Process compositor, string specializedDevice) = LaunchCompositor(request, log, ct);
 
@@ -357,7 +357,7 @@ public static class ApplyService
 
     /// <summary>
     /// Decides whether startup should re-apply the saved configuration. Auto-apply happens when
-    /// the user asked for it, or when a split was still running when we last exited — but never
+    /// the user asked for it, or when a split was still running when we last exited - but never
     /// after a deliberate revert, and never when a split is somehow already up.
     /// </summary>
     public static bool ShouldAutoApplyOnStartup(AppSettings? settings, bool splitAlreadyActive)
@@ -375,7 +375,7 @@ public static class ApplyService
 
     /// <summary>
     /// What is live right now, so a declined apply can be put back. "Applied" means a split is
-    /// genuinely running, not merely that settings.json remembers one — a user who reverted
+    /// genuinely running, not merely that settings.json remembers one - a user who reverted
     /// deliberately must not have it resurrected.
     /// </summary>
     public static AppliedSnapshot CaptureAppliedSnapshot()
@@ -395,7 +395,7 @@ public static class ApplyService
     }
 
     /// <summary>
-    /// Restores the configuration captured before the declined apply — re-applying the previous
+    /// Restores the configuration captured before the declined apply - re-applying the previous
     /// split, or reverting completely when there was none. Never prompts (that would trap the
     /// user in a loop of countdowns).
     /// </summary>
@@ -404,7 +404,7 @@ public static class ApplyService
     {
         if (!snapshot.WasApplied)
         {
-            log.Report("Nothing was applied before this change — reverting completely.");
+            log.Report("Nothing was applied before this change - reverting completely.");
             Revert(log, ct, ui);
             return "no split (fully reverted)";
         }
@@ -414,7 +414,7 @@ public static class ApplyService
 
         if (physical is null || snapshot.Resolutions.Count != layout.SegmentCount)
         {
-            log.Report("The previous configuration is no longer valid — reverting completely.");
+            log.Report("The previous configuration is no longer valid - reverting completely.");
             Revert(log, ct, ui);
             return "no split (fully reverted)";
         }
@@ -449,7 +449,7 @@ public static class ApplyService
         bool stopped = CompositorLauncher.StopAndWait(CompositorStopTimeout, log.Report);
         log.Report(stopped ? "Compositor stopped." : "Compositor may still be running.");
 
-        // Put the physical monitor back on the desktop BEFORE anything else is torn down —
+        // Put the physical monitor back on the desktop BEFORE anything else is torn down -
         // otherwise the primary restore and the virtual-monitor removal both operate on a
         // desktop that is missing a display.
         ClearSpecializationIfOurs(log, ui, ct);
@@ -484,7 +484,7 @@ public static class ApplyService
         // Mark the split as deliberately off, so startup auto-apply does not resurrect it.
         MarkSplitInactive(deliberate: true);
 
-        log.Report("Reverted — virtual monitors removed.");
+        log.Report("Reverted - virtual monitors removed.");
     }
 
     // ------------------------------------------------------------------ display hiding
@@ -541,11 +541,11 @@ public static class ApplyService
 
         bool alreadyHidden = state.EnabledNow;
         if (alreadyHidden)
-            log.Report($"{physical.DisplayLabel} is already off the desktop — going straight to acquiring it.");
+            log.Report($"{physical.DisplayLabel} is already off the desktop - going straight to acquiring it.");
 
         // START THE COMPOSITOR FIRST. It polls until the display becomes specialized and then
         // acquires it. If the display were removed from the desktop before anything was ready to
-        // scan out to it, the panel would simply go black — which is exactly what happened when
+        // scan out to it, the panel would simply go black - which is exactly what happened when
         // this was done in the other order.
         Process compositor = CompositorLauncher.Start(
             CompositorLauncher.SpecializedArgument,
@@ -553,11 +553,11 @@ public static class ApplyService
             CompositorLauncher.FrameDeadlineArgument, CompositorLauncher.FrameDeadlineSeconds.ToString());
         log.Report($"Started {compositor.ProcessName}.exe {CompositorLauncher.SpecializedArgument} " +
                    $"{CompositorLauncher.WaitForTargetArgument} {CompositorLauncher.WaitForTargetSeconds} " +
-                   $"(pid {compositor.Id}) — it is now waiting to take over the display.");
+                   $"(pid {compositor.Id}) - it is now waiting to take over the display.");
 
         if (!alreadyHidden && !SetSpecialized(physical, true, request.SpecializationUi, log, ct))
         {
-            log.Report("Display hiding was cancelled — restarting the compositor in windowed mode.");
+            log.Report("Display hiding was cancelled - restarting the compositor in windowed mode.");
             CompositorLauncher.StopAndWait(CompositorStopTimeout, log.Report);
             return (StartPlain(log), string.Empty);
         }
@@ -587,7 +587,7 @@ public static class ApplyService
     /// The keep-or-roll-back decision, isolated so it can be tested without touching a display.
     ///
     /// The user is only ever asked when the compositor actually confirmed it is presenting
-    /// through the hidden display. Every other outcome — no signal, or the compositor dying —
+    /// through the hidden display. Every other outcome - no signal, or the compositor dying -
     /// rolls back WITHOUT prompting, because in those cases the user may be looking at a blank
     /// screen and cannot answer.
     /// </summary>
@@ -597,19 +597,19 @@ public static class ApplyService
         switch (wait)
         {
             case CompositorLauncher.SpecializedWait.Live:
-                log.Report("Compositor confirmed specialized presentation — asking you to confirm.");
+                log.Report("Compositor confirmed specialized presentation - asking you to confirm.");
                 bool keep = askUser();
                 log.Report(keep ? "Keeping the hidden display." : "Restoring the display to the desktop.");
                 return keep;
 
             case CompositorLauncher.SpecializedWait.CompositorExited:
-                log.Report("The compositor stopped before it could present through the hidden display — " +
+                log.Report("The compositor stopped before it could present through the hidden display - " +
                            "rolling back without prompting.");
                 return false;
 
             default:
                 log.Report($"No {CompositorLauncher.SpecializedLiveEventName} signal within " +
-                           $"{SpecializedLiveTimeout.TotalSeconds:0}s — treating hiding as failed and " +
+                           $"{SpecializedLiveTimeout.TotalSeconds:0}s - treating hiding as failed and " +
                            "rolling back without prompting.");
                 return false;
         }
@@ -618,7 +618,7 @@ public static class ApplyService
     /// <summary>
     /// Adds or removes a monitor from the desktop, trying the routes in order of preference:
     ///
-    ///   1. SystemSettingsAdminFlows.exe SpecializeDisplay — what Windows itself runs. Needs a
+    ///   1. SystemSettingsAdminFlows.exe SpecializeDisplay - what Windows itself runs. Needs a
     ///      validated identity hash, so it is off until that has been proven on this machine.
     ///   2. The guided Windows Settings dialog, which the user completes by hand.
     ///
@@ -758,7 +758,7 @@ public static class ApplyService
     /// <summary>
     /// Determines which display should be restored as primary on Revert.
     /// If a split is already active (one of our virtual monitors currently holds primary),
-    /// the value saved by the first Apply is carried forward rather than overwritten —
+    /// the value saved by the first Apply is carried forward rather than overwritten -
     /// otherwise a second Apply would "remember" a virtual monitor as the original primary.
     /// </summary>
     private static (string Device, string FriendlyName) CapturePreviousPrimary(
@@ -769,7 +769,7 @@ public static class ApplyService
         if (livePrimary is not null && !livePrimary.IsDeskSplitVirtual)
         {
             log.Report($"Current primary display: {livePrimary.DisplayLabel} ({livePrimary.DeviceName}) " +
-                       "— will be restored on Revert.");
+                       "- will be restored on Revert.");
             return (livePrimary.DeviceName, livePrimary.FriendlyName);
         }
 
@@ -794,7 +794,7 @@ public static class ApplyService
 
     /// <summary>
     /// Makes <paramref name="targetDevice"/> the primary display. Windows pins the primary at
-    /// the virtual-desktop origin, so this re-bases every monitor by the same vector — all
+    /// the virtual-desktop origin, so this re-bases every monitor by the same vector - all
     /// relative offsets, and therefore the arrangement, are preserved exactly.
     /// Never throws: a failure here leaves a working split with the wrong primary, which is
     /// far better than aborting the apply.
@@ -804,7 +804,7 @@ public static class ApplyService
     /// suspend/resume primary switches. Without this an automatic suspend could land in the
     /// middle of an Apply and leave the desktop half-rearranged.
     ///
-    /// Deliberately NOT held across the keep-or-revert countdown — a UAC prompt must not have to
+    /// Deliberately NOT held across the keep-or-revert countdown - a UAC prompt must not have to
     /// wait 15 seconds for a confirmation the user may not even be able to see.
     /// </summary>
     public static readonly object DisplayOperationGate = new();
@@ -852,14 +852,14 @@ public static class ApplyService
             IReadOnlyList<DisplayArranger.MonitorPlacement> rebased =
                 DisplayArranger.RebaseToPrimary(snapshot, targetDevice);
 
-            log.Report($"Making {description} the primary display — re-basing all " +
+            log.Report($"Making {description} the primary display - re-basing all " +
                        $"{rebased.Count} monitor(s) by ({-origin.X},{-origin.Y}):");
             DisplayArranger.ApplyLayout(rebased, log.Report);
             return true;
         }
         catch (DisplayArrangeException ex)
         {
-            log.Report("WARNING: primary switch failed — " + ex.Message);
+            log.Report("WARNING: primary switch failed - " + ex.Message);
             return false;
         }
     }
@@ -987,7 +987,7 @@ public static class ApplyService
             if (refreshed.Count == arrived.Count) arrived = refreshed;
         }
 
-        log.Report($"WARNING: {reason} — falling back to positional \\\\.\\DISPLAYn-order mapping. " +
+        log.Report($"WARNING: {reason} - falling back to positional \\\\.\\DISPLAYn-order mapping. " +
                    "Segments may end up on the wrong virtual monitor.");
         return arrived;
     }
@@ -1031,6 +1031,7 @@ public static class ApplyService
     {
         DateTime deadline = DateTime.UtcNow + MonitorArrivalTimeout;
         List<MonitorInfo> found = new();
+        bool triedExtend = false;
 
         while (DateTime.UtcNow < deadline)
         {
@@ -1044,13 +1045,47 @@ public static class ApplyService
 
             if (found.Count == expected) return found;
 
+            // On some systems (observed: Intel UHD + IddCx) Windows initially attaches the
+            // new virtual targets as clones of the physical GDI source, so Enumerate()
+            // collapses them onto \\.\DISPLAY1 and we see zero new monitors. Forcing the
+            // CCD extend topology promotes each target onto its own source.
+            if (!triedExtend && DateTime.UtcNow + MonitorArrivalTimeout - deadline >= TimeSpan.FromSeconds(1))
+            {
+                triedExtend = true;
+                TryForceExtendTopology();
+            }
+
             ct.WaitHandle.WaitOne(PollInterval);
         }
+
+        // Last chance before failing.
+        TryForceExtendTopology();
+        found = SafeEnumerate()
+            .Where(m => m.IsDeskSplitVirtual || !baseline.Contains(m.DeviceName))
+            .OrderBy(m => DisplayConfig.DeviceIndex(m.DeviceName))
+            .ThenBy(m => m.DeviceName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (found.Count == expected) return found;
 
         throw new ApplyException(
             $"Timed out after {MonitorArrivalTimeout.TotalSeconds:0}s waiting for the virtual monitors: " +
             $"expected {expected}, saw {found.Count}. Is the DesktopSplitter driver installed and started " +
             "(Device Manager -> Display adapters)?");
+    }
+
+    private static void TryForceExtendTopology()
+    {
+        try
+        {
+            // Equivalent to DisplaySwitch.exe /extend — null path arrays + SDC_TOPOLOGY_EXTEND.
+            _ = NativeMethods.SetDisplayConfig(
+                0, IntPtr.Zero, 0, IntPtr.Zero,
+                NativeMethods.SDC_TOPOLOGY_EXTEND | NativeMethods.SDC_APPLY);
+        }
+        catch
+        {
+            // Best effort; the wait loop will still time out with a clear error.
+        }
     }
 
     private static IReadOnlyList<MonitorInfo> SafeEnumerate()
@@ -1074,7 +1109,7 @@ public static class ApplyService
         {
             throw new ApplyException(
                 $"Access denied writing {ConfigPath}.{Environment.NewLine}" +
-                "Run DesktopSplitter as administrator once — it will create " +
+                "Run DesktopSplitter as administrator once - it will create " +
                 $"{ConfigDirectory} and grant the current user write access; " +
                 "subsequent runs do not need elevation.", ex);
         }
@@ -1084,4 +1119,5 @@ public static class ApplyService
         }
     }
 }
+
 

@@ -704,6 +704,7 @@ public sealed class MainViewModel : ObservableObject
 
         if (splitter.IsVertical) WriteTracks(layout, updated, null);
         else WriteTracks(layout, null, updated);
+        _dragTracks = updated;
 
         RebuildEditor();
         RaiseCommandStates();

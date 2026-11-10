@@ -1,4 +1,4 @@
-using DesktopSplitter.Models;
+﻿using DesktopSplitter.Models;
 
 namespace DesktopSplitter.ViewModels;
 
@@ -8,6 +8,7 @@ public sealed class SegmentViewModel : ObservableObject
     private string _widthText = string.Empty;
     private string _heightText = string.Empty;
     private string _error = string.Empty;
+    private bool _suspendChanged;
 
     public SegmentViewModel(int index, int width, int height)
     {
@@ -24,13 +25,23 @@ public sealed class SegmentViewModel : ObservableObject
     public string WidthText
     {
         get => _widthText;
-        set { if (SetProperty(ref _widthText, value)) { Validate(); RaiseChanged(); } }
+        set
+        {
+            if (!SetProperty(ref _widthText, value)) return;
+            Validate();
+            if (!_suspendChanged) RaiseChanged();
+        }
     }
 
     public string HeightText
     {
         get => _heightText;
-        set { if (SetProperty(ref _heightText, value)) { Validate(); RaiseChanged(); } }
+        set
+        {
+            if (!SetProperty(ref _heightText, value)) return;
+            Validate();
+            if (!_suspendChanged) RaiseChanged();
+        }
     }
 
     public string Error
@@ -51,14 +62,34 @@ public sealed class SegmentViewModel : ObservableObject
 
     private void RaiseChanged() => Changed?.Invoke(this, EventArgs.Empty);
 
+    /// <summary>
+    /// Pushes a new size from the splitter / layout maths. Always raises PropertyChanged so
+    /// bound TextBoxes refresh even when WPF TwoWay bindings would otherwise keep a stale
+    /// target value during/after a drag.
+    /// </summary>
     public void Set(int width, int height)
     {
-        _widthText = width.ToString();
-        _heightText = height.ToString();
-        OnPropertyChanged(nameof(WidthText));
-        OnPropertyChanged(nameof(HeightText));
-        Validate();
-        RaiseChanged();
+        string wText = width.ToString();
+        string hText = height.ToString();
+        bool widthChanged = !string.Equals(_widthText, wText, StringComparison.Ordinal);
+        bool heightChanged = !string.Equals(_heightText, hText, StringComparison.Ordinal);
+
+        _suspendChanged = true;
+        try
+        {
+            _widthText = wText;
+            _heightText = hText;
+            // Always notify: SetProperty would skip equal values, and some TwoWay TextBox
+            // bindings also ignore a no-op; drag UI must refresh every move.
+            OnPropertyChanged(nameof(WidthText));
+            OnPropertyChanged(nameof(HeightText));
+            OnPropertyChanged(nameof(Width));
+            OnPropertyChanged(nameof(Height));
+            Validate();
+        }
+        finally { _suspendChanged = false; }
+
+        if (widthChanged || heightChanged) RaiseChanged();
     }
 
     private void Validate()

@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -82,7 +82,7 @@ public partial class MainWindow : Window, IHidingUi
             seconds,
             heading: "Keep these display settings?",
             detail: $"Applied: {summary}." + Environment.NewLine +
-                    "If anything looks wrong, or you cannot see this clearly, do nothing — " +
+                    "If anything looks wrong, or you cannot see this clearly, do nothing - " +
                     "the previous settings come back when the countdown reaches zero.");
 
         window.Answered += keep =>
@@ -117,7 +117,7 @@ public partial class MainWindow : Window, IHidingUi
         if (placeOn is not null) window.PlaceOn(placeOn);
         window.Activate();
 
-        // Take the user straight there — the button is for a second look.
+        // Take the user straight there - the button is for a second look.
         ManualSpecializationWindow.OpenDisplaySettings();
 
         return new GuidedHandle(window);
@@ -149,6 +149,24 @@ public partial class MainWindow : Window, IHidingUi
         return IntPtr.Zero;
     }
 
+    // ------------------------------------------------------------------ segment size text boxes (OneWay + TextChanged)
+    // Mode=OneWay keeps splitter-drag pushes visible; TextChanged writes user typing back.
+
+    private void SegmentWidth_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.TextBox box) return;
+        if (box.DataContext is not ViewModels.SegmentViewModel seg) return;
+        if (seg.WidthText == box.Text) return;
+        seg.WidthText = box.Text;
+    }
+
+    private void SegmentHeight_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.TextBox box) return;
+        if (box.DataContext is not ViewModels.SegmentViewModel seg) return;
+        if (seg.HeightText == box.Text) return;
+        seg.HeightText = box.Text;
+    }
     // ------------------------------------------------------------------ splitter dragging
 
     private void Splitter_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -198,7 +216,7 @@ public partial class MainWindow : Window, IHidingUi
     protected override void OnClosing(CancelEventArgs e)
     {
         // Closing the window normally keeps the app alive in the tray; Exit is explicit. When the
-        // user has turned that off, closing the window really exits — and App's teardown reverts.
+        // user has turned that off, closing the window really exits - and App's teardown reverts.
         bool minimiseToTray = SettingsStore.Load()?.MinimizeToTrayOnClose ?? true;
 
         if (Application.Current is App { IsExiting: false } && _tray is not null && minimiseToTray)
@@ -212,3 +230,4 @@ public partial class MainWindow : Window, IHidingUi
         if (Application.Current is App app && !app.IsExiting) app.ExitApplication();
     }
 }
+

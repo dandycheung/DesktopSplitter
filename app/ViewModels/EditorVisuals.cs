@@ -1,4 +1,4 @@
-using System.Windows.Input;
+﻿using System.Windows.Input;
 
 namespace DesktopSplitter.ViewModels;
 
@@ -21,8 +21,18 @@ public sealed class ZoneVisual : ObservableObject
     public double W { get => _w; set => SetProperty(ref _w, value); }
     public double H { get => _h; set => SetProperty(ref _h, value); }
 
-    /// <summary>"2560x1440" — the segment's size in monitor pixels.</summary>
-    public string SizeText { get => _sizeText; set => SetProperty(ref _sizeText, value); }
+    /// <summary>"2560x1440" - the segment's size in monitor pixels.</summary>
+    public string SizeText
+    {
+        get => _sizeText;
+        set
+        {
+            // Always raise so live labels refresh during splitter drag even if WPF
+            // coalesces identical-looking transfers.
+            _sizeText = value ?? string.Empty;
+            OnPropertyChanged(nameof(SizeText));
+        }
+    }
 
     /// <summary>Aspect-ratio badge such as "16:9", or "" when the zone matches no common ratio.</summary>
     public string AspectNote
@@ -102,3 +112,4 @@ public sealed class SplitterVisual : ObservableObject
 
     public Cursor DragCursor => IsVertical ? Cursors.SizeWE : Cursors.SizeNS;
 }
+

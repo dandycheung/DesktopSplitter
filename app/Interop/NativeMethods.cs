@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 namespace DesktopSplitter.Interop;
 
@@ -161,7 +161,7 @@ internal static class NativeMethods
     internal const uint DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME = 2;
     internal const uint DISPLAYCONFIG_DEVICE_INFO_GET_ADAPTER_NAME = 4;
 
-    // Monitor specialization — the SUPPORTED "remove display from desktop" mechanism that
+    // Monitor specialization - the SUPPORTED "remove display from desktop" mechanism that
     // Settings > Advanced display uses. Both constants ship in wingdi.h (verified in SDK
     // 10.0.28000.0) but are omitted from the documented DISPLAYCONFIG_DEVICE_INFO_TYPE table.
     internal const uint DISPLAYCONFIG_DEVICE_INFO_GET_MONITOR_SPECIALIZATION = 12;
@@ -237,6 +237,19 @@ internal static class NativeMethods
         ref uint numPathArrayElements, [Out] DISPLAYCONFIG_PATH_INFO[] pathArray,
         ref uint numModeInfoArrayElements, [Out] DISPLAYCONFIG_MODE_INFO[] modeInfoArray,
         IntPtr currentTopologyId);
+
+    internal const uint SDC_TOPOLOGY_INTERNAL = 0x00000001;
+    internal const uint SDC_TOPOLOGY_CLONE = 0x00000002;
+    internal const uint SDC_TOPOLOGY_EXTEND = 0x00000004;
+    internal const uint SDC_TOPOLOGY_EXTERNAL = 0x00000008;
+    internal const uint SDC_APPLY = 0x00000080;
+    internal const uint SDC_PATH_PERSIST_IF_REQUIRED = 0x00000008;
+
+    [DllImport("user32.dll", ExactSpelling = true)]
+    internal static extern int SetDisplayConfig(
+        uint numPathArrayElements, IntPtr pathArray,
+        uint numModeInfoArrayElements, IntPtr modeInfoArray,
+        uint flags);
 
     [DllImport("user32.dll", ExactSpelling = true, CharSet = CharSet.Unicode)]
     internal static extern int DisplayConfigGetDeviceInfo(ref DISPLAYCONFIG_SOURCE_DEVICE_NAME requestPacket);
@@ -382,3 +395,4 @@ internal static class NativeMethods
         _ => $"unknown code {code}",
     };
 }
+
