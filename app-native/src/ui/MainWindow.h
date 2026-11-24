@@ -184,6 +184,8 @@ private:
     void ShowTrayMenu();
     void DrawRoundRect(HDC hdc, RECT rc, int radius, COLORREF fill, COLORREF border, int borderW = 1);
     void DrawCheckbox(const DRAWITEMSTRUCT* dis);
+    void PaintComboBox(HDC hdc, HWND hwnd);
+    static LRESULT CALLBACK ComboSubclassProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR subId, DWORD_PTR refData);
     int ScrollbarWidth() const;
     void ClearBodyNonClientScroll();
     HWND ScrollHwnd() const { return scrollBar_; }
@@ -204,6 +206,7 @@ private:
     bool dragging_ = false;
     int hoverSplitter_ = -1;
     bool layoutInProgress_ = false;
+    bool comboHover_ = false;
 
     HFONT fontTitle_ = nullptr, fontBody_ = nullptr, fontMuted_ = nullptr;
     HFONT fontHeader_ = nullptr, fontSmall_ = nullptr, fontMono_ = nullptr, fontZone_ = nullptr;

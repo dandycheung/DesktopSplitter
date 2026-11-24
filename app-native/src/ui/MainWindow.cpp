@@ -24,9 +24,7 @@ int WindowDpi(HWND hwnd) {
 }
 
 void DarkTitle(HWND hwnd) {
-    BOOL dark = TRUE;
-    DwmSetWindowAttribute(hwnd, 20, &dark, sizeof(dark));
-    DwmSetWindowAttribute(hwnd, 19, &dark, sizeof(dark));
+    theme::EnableDarkTitleBar(hwnd);
 }
 
 void CenterOnWorkArea(int w, int h, int& x, int& y) {
@@ -115,6 +113,7 @@ bool CMainWindow::OnCreate(UINT, WPARAM, LPARAM, LRESULT& lResult) {
     body_.Create(WS_EX_CONTROLPARENT, L"",
                  WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
                  0, 0, 100, 100, m_hWnd, (HMENU)(INT_PTR)IDC_BODY_SCROLL);
+    theme::ApplyDarkExplorerTheme(BodyHwnd());
     ::ShowScrollBar(m_hWnd, SB_VERT, FALSE);
     RecreateChildren();
     ClearBodyNonClientScroll();
@@ -223,6 +222,8 @@ void CMainWindow::RecreateChildren() {
         WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_OWNERDRAWFIXED | CBS_HASSTRINGS | WS_VSCROLL,
         0, 0, 10, 200, body, (HMENU)IDC_MONITOR, inst, nullptr);
     ::SendMessageW(comboMonitor_, WM_SETFONT, (WPARAM)fontBody_, TRUE);
+    theme::ApplyDarkComboTheme(comboMonitor_);
+    ::SetWindowSubclass(comboMonitor_, ComboSubclassProc, 1, reinterpret_cast<DWORD_PTR>(this));
     btn(btnRescan_, L"Rescan", IDC_RESCAN, body);
     chkStart_ = ::CreateWindowExW(0, L"BUTTON", L"Start DesktopSplitter with Windows",
         WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW, 0,0,10,10, body, (HMENU)IDC_START_WITH_WINDOWS, inst, nullptr);
@@ -241,17 +242,21 @@ void CMainWindow::RecreateChildren() {
         WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL | ES_AUTOHSCROLL,
         0,0,10,10, m_hWnd, (HMENU)IDC_STATUS, inst, nullptr);
     ::SendMessageW(status_, WM_SETFONT, (WPARAM)fontMuted_, TRUE);
+    theme::ApplyDarkExplorerTheme(status_);
     for (int i = 0; i < 4; ++i) {
-        segWidth_[i] = ::CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"",
+        segWidth_[i] = ::CreateWindowExW(0, L"EDIT", L"",
             WS_CHILD | WS_TABSTOP | ES_AUTOHSCROLL, 0,0,66,24, body, (HMENU)(INT_PTR)(IDC_SEG_WIDTH_BASE+i), inst, nullptr);
-        segHeight_[i] = ::CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"",
+        segHeight_[i] = ::CreateWindowExW(0, L"EDIT", L"",
             WS_CHILD | WS_TABSTOP | ES_AUTOHSCROLL, 0,0,66,24, body, (HMENU)(INT_PTR)(IDC_SEG_HEIGHT_BASE+i), inst, nullptr);
         ::SendMessageW(segWidth_[i], WM_SETFONT, (WPARAM)fontMono_, TRUE);
         ::SendMessageW(segHeight_[i], WM_SETFONT, (WPARAM)fontMono_, TRUE);
+        theme::ApplyDarkExplorerTheme(segWidth_[i]);
+        theme::ApplyDarkExplorerTheme(segHeight_[i]);
     }
     scrollBar_ = ::CreateWindowExW(0, L"SCROLLBAR", L"",
         WS_CHILD | WS_VISIBLE | SBS_VERT,
         0, 0, 16, 100, body, (HMENU)(INT_PTR)IDC_BODY_VSCROLL, inst, nullptr);
+    theme::ApplyDarkExplorerTheme(scrollBar_);
 }
 
 void CMainWindow::InvalidateHeader() {
@@ -528,8 +533,12 @@ void CMainWindow::PlaceBodyChildren() {
     add(chkAuto_, doc_.rcChkAuto, true);
     for (int i = 0; i < 4; ++i) {
         bool show = i < doc_.segCount;
-        add(segWidth_[i], doc_.rcSegW[i], show);
-        add(segHeight_[i], doc_.rcSegH[i], show);
+        RECT rw = doc_.rcSegW[i];
+        RECT rh = doc_.rcSegH[i];
+        ::InflateRect(&rw, -Dip(5), -Dip(3));
+        ::InflateRect(&rh, -Dip(5), -Dip(3));
+        add(segWidth_[i], rw, show);
+        add(segHeight_[i], rh, show);
     }
     add(btnReset_, doc_.rcReset, true);
     add(btnHideEn_, doc_.rcHideEn, true);
@@ -756,6 +765,22 @@ bool CMainWindow::OnCommand(UINT, WPARAM wp, LPARAM, LRESULT& lResult) {
     int code = HIWORD(wp);
     if (id == IDC_MONITOR && code == CBN_SELCHANGE) {
         ctl_.SetSelectedMonitorIndex((int)::SendMessageW(comboMonitor_, CB_GETCURSEL, 0, 0));
+        if (comboMonitor_) ::InvalidateRect(comboMonitor_, nullptr, FALSE);
+        lResult = 0; return true;
+    }
+    if (id == IDC_MONITOR && (code == CBN_DROPDOWN || code == CBN_CLOSEUP)) {
+        if (comboMonitor_) ::InvalidateRect(comboMonitor_, nullptr, FALSE);
+        lResult = 0; return true;
+    }
+    if ((code == EN_SETFOCUS || code == EN_KILLFOCUS) &&
+        ((id >= IDC_SEG_WIDTH_BASE && id < IDC_SEG_WIDTH_BASE + 4) ||
+         (id >= IDC_SEG_HEIGHT_BASE && id < IDC_SEG_HEIGHT_BASE + 4))) {
+        if (BodyHwnd()) {
+            bool isW = (id >= IDC_SEG_WIDTH_BASE && id < IDC_SEG_WIDTH_BASE + 4);
+            int idx = isW ? (id - IDC_SEG_WIDTH_BASE) : (id - IDC_SEG_HEIGHT_BASE);
+            RECT fr = Vis(isW ? doc_.rcSegW[idx] : doc_.rcSegH[idx]);
+            ::InvalidateRect(BodyHwnd(), &fr, FALSE);
+        }
         lResult = 0; return true;
     }
     if (code == EN_CHANGE && id >= IDC_SEG_WIDTH_BASE && id < IDC_SEG_WIDTH_BASE + 4) {
@@ -818,7 +843,15 @@ bool CMainWindow::OnCommand(UINT, WPARAM wp, LPARAM, LRESULT& lResult) {
 bool CMainWindow::OnCtlColor(UINT msg, WPARAM wp, LPARAM lp, LRESULT& lResult) {
     HDC hdc = (HDC)wp;
     HWND ctl = (HWND)lp;
-    if (ctl == status_ || (msg == WM_CTLCOLOREDIT)) {
+    for (int i = 0; i < 4; ++i) {
+        if (ctl == segWidth_[i] || ctl == segHeight_[i]) {
+            SetTextColor(hdc, ::IsWindowEnabled(ctl) ? theme::Foreground : theme::Muted);
+            SetBkColor(hdc, theme::ControlBackground);
+            lResult = (LRESULT)brEdit_;
+            return true;
+        }
+    }
+    if (ctl == status_ || msg == WM_CTLCOLOREDIT || msg == WM_CTLCOLORLISTBOX) {
         SetTextColor(hdc, theme::Foreground);
         SetBkColor(hdc, theme::PanelBackground);
         lResult = (LRESULT)brPanel_;
@@ -849,7 +882,7 @@ bool CMainWindow::OnDrawItem(UINT, WPARAM, LPARAM lp, LRESULT& lResult) {
     bool selected = (dis->itemState & ODS_SELECTED) != 0;
     bool hover = (dis->itemState & ODS_HOTLIGHT) != 0;
     if (dis->CtlType == ODT_COMBOBOX) {
-        COLORREF bg = theme::ControlBackground;
+        COLORREF bg = theme::PanelBackground;
         if (dis->itemState & ODS_COMBOBOXEDIT) bg = theme::ControlBackground;
         else if (dis->itemState & ODS_SELECTED) bg = theme::AccentSoft;
         else if (dis->itemState & ODS_HOTLIGHT) bg = theme::ComboItemHover;
@@ -859,9 +892,9 @@ bool CMainWindow::OnDrawItem(UINT, WPARAM, LPARAM lp, LRESULT& lResult) {
             wchar_t buf[512];
             ::SendMessageW(dis->hwndItem, CB_GETLBTEXT, dis->itemID, (LPARAM)buf);
             SetBkMode(hdc, TRANSPARENT);
-            SetTextColor(hdc, theme::Foreground);
+            SetTextColor(hdc, disabled ? theme::Muted : theme::Foreground);
             HFONT old = (HFONT)SelectObject(hdc, fontBody_);
-            RECT t = rc; t.left += Dip(9);
+            RECT t = rc; t.left += Dip(9); t.right -= Dip(9);
             DrawTextW(hdc, buf, -1, &t, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
             SelectObject(hdc, old);
         }
@@ -876,6 +909,10 @@ bool CMainWindow::OnDrawItem(UINT, WPARAM, LPARAM lp, LRESULT& lResult) {
     }
     if (dis->CtlType == ODT_BUTTON) {
         bool primary = (dis->hwndItem == btnApply_);
+        bool inPanel = (dis->hwndItem == btnHideEn_ || dis->hwndItem == btnHideDis_ || dis->hwndItem == btnHideRecheck_);
+        HBRUSH outerBr = CreateSolidBrush(inPanel ? theme::PanelBackground : theme::WindowBackground);
+        FillRect(hdc, &rc, outerBr);
+        DeleteObject(outerBr);
         COLORREF bg = primary ? theme::AccentSoft : theme::PanelBackground;
         COLORREF bd = primary ? theme::Accent : theme::PanelBorder;
         if (hover || selected) bg = theme::ButtonHover;
@@ -911,19 +948,7 @@ void CMainWindow::DrawCheckbox(const DRAWITEMSTRUCT* dis) {
     if (dis->itemState & ODS_FOCUS) bd = theme::Accent;
     DrawRoundRect(hdc, bx, Dip(2), fill, bd, 1);
     if (checked) {
-        HPEN pen = CreatePen(PS_SOLID, (std::max)(1, Dip(2)), theme::Foreground);
-        HGDIOBJ oldP = SelectObject(hdc, pen);
-        int x0 = bx.left + Dip(3);
-        int y0 = bx.top + box / 2;
-        int x1 = bx.left + box / 2 - Dip(1);
-        int y1 = bx.bottom - Dip(4);
-        int x2 = bx.right - Dip(3);
-        int y2 = bx.top + Dip(4);
-        MoveToEx(hdc, x0, y0, nullptr);
-        LineTo(hdc, x1, y1);
-        LineTo(hdc, x2, y2);
-        SelectObject(hdc, oldP);
-        DeleteObject(pen);
+        theme::DrawCheckmarkAA(hdc, bx, (std::max)(2, Dip(2)), theme::Foreground);
     }
 
     wchar_t text[256];
@@ -942,15 +967,105 @@ void CMainWindow::DrawCheckbox(const DRAWITEMSTRUCT* dis) {
 }
 
 void CMainWindow::DrawRoundRect(HDC hdc, RECT rc, int radius, COLORREF fill, COLORREF border, int borderW) {
-    HBRUSH br = CreateSolidBrush(fill);
-    HPEN pen = CreatePen(PS_SOLID, borderW, border);
-    HGDIOBJ oldB = SelectObject(hdc, br);
-    HGDIOBJ oldP = SelectObject(hdc, pen);
-    RoundRect(hdc, rc.left, rc.top, rc.right, rc.bottom, radius * 2, radius * 2);
-    SelectObject(hdc, oldB);
-    SelectObject(hdc, oldP);
-    DeleteObject(br);
-    DeleteObject(pen);
+    theme::DrawRoundRectAA(hdc, rc, radius, fill, border, borderW);
+}
+
+void CMainWindow::PaintComboBox(HDC hdc, HWND hwnd) {
+    RECT rc{};
+    ::GetClientRect(hwnd, &rc);
+    int w = (std::max)(1, (int)(rc.right - rc.left));
+    int h = (std::max)(1, (int)(rc.bottom - rc.top));
+
+    HDC mem = ::CreateCompatibleDC(hdc);
+    HBITMAP bmp = ::CreateCompatibleBitmap(hdc, w, h);
+    HGDIOBJ oldBmp = ::SelectObject(mem, bmp);
+
+    HBRUSH outer = ::CreateSolidBrush(theme::WindowBackground);
+    ::FillRect(mem, &rc, outer);
+    ::DeleteObject(outer);
+
+    bool enabled = ::IsWindowEnabled(hwnd) != FALSE;
+    bool focused = ::GetFocus() == hwnd;
+    bool dropped = ::SendMessageW(hwnd, CB_GETDROPPEDSTATE, 0, 0) != 0;
+    bool hot = enabled && (comboHover_ || dropped);
+
+    COLORREF bg = hot ? theme::ControlHover : theme::ControlBackground;
+    COLORREF bd = (focused || dropped) ? theme::Accent : theme::PanelBorder;
+    DrawRoundRect(mem, rc, Dip(4), bg, bd, 1);
+
+    int sel = (int)::SendMessageW(hwnd, CB_GETCURSEL, 0, 0);
+    if (sel >= 0) {
+        LRESULT len = ::SendMessageW(hwnd, CB_GETLBTEXTLEN, (WPARAM)sel, 0);
+        if (len > 0 && len < 4096) {
+            wstring text((size_t)len + 1, L'\0');
+            ::SendMessageW(hwnd, CB_GETLBTEXT, (WPARAM)sel, (LPARAM)text.data());
+            text.resize((size_t)len);
+            ::SetBkMode(mem, TRANSPARENT);
+            ::SetTextColor(mem, enabled ? theme::Foreground : theme::Muted);
+            HFONT oldF = (HFONT)::SelectObject(mem, fontBody_);
+            RECT tr = rc;
+            tr.left += Dip(9);
+            tr.right -= Dip(28);
+            ::DrawTextW(mem, text.c_str(), -1, &tr, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+            ::SelectObject(mem, oldF);
+        }
+    }
+
+    int aw = (std::max)(6, Dip(8));
+    int ah = (std::max)(3, Dip(4));
+    int acx = rc.right - Dip(10) - aw / 2;
+    int acy = (rc.top + rc.bottom) / 2;
+    COLORREF arrowCol = (enabled && hot) ? theme::Foreground : theme::Muted;
+    theme::DrawDownArrowAA(mem, acx, acy, aw, ah, arrowCol);
+
+    ::BitBlt(hdc, 0, 0, w, h, mem, 0, 0, SRCCOPY);
+    ::SelectObject(mem, oldBmp);
+    ::DeleteObject(bmp);
+    ::DeleteDC(mem);
+}
+
+LRESULT CALLBACK CMainWindow::ComboSubclassProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp,
+                                                UINT_PTR subId, DWORD_PTR refData) {
+    auto* self = reinterpret_cast<CMainWindow*>(refData);
+    switch (msg) {
+    case WM_ERASEBKGND:
+        return 1;
+    case WM_PAINT: {
+        PAINTSTRUCT ps;
+        HDC hdc = ::BeginPaint(hwnd, &ps);
+        if (self) self->PaintComboBox(hdc, hwnd);
+        ::EndPaint(hwnd, &ps);
+        return 0;
+    }
+    case WM_MOUSEMOVE:
+        if (self && !self->comboHover_) {
+            self->comboHover_ = true;
+            TRACKMOUSEEVENT tme{};
+            tme.cbSize = sizeof(tme);
+            tme.dwFlags = TME_LEAVE;
+            tme.hwndTrack = hwnd;
+            ::TrackMouseEvent(&tme);
+            ::InvalidateRect(hwnd, nullptr, FALSE);
+        }
+        break;
+    case WM_MOUSELEAVE:
+        if (self && self->comboHover_) {
+            self->comboHover_ = false;
+            ::InvalidateRect(hwnd, nullptr, FALSE);
+        }
+        break;
+    case WM_SETFOCUS:
+    case WM_KILLFOCUS:
+    case WM_ENABLE: {
+        LRESULT r = ::DefSubclassProc(hwnd, msg, wp, lp);
+        ::InvalidateRect(hwnd, nullptr, FALSE);
+        return r;
+    }
+    case WM_NCDESTROY:
+        ::RemoveWindowSubclass(hwnd, ComboSubclassProc, subId);
+        break;
+    }
+    return ::DefSubclassProc(hwnd, msg, wp, lp);
 }
 
 
@@ -1083,6 +1198,13 @@ void CMainWindow::PaintBody(HDC hdc, const RECT& rc) {
         RECT lh = { cardRc.left + Dip(10) + Dip(66) + Dip(28), cardRc.top + Dip(32),
                     cardRc.left + Dip(26) + Dip(66) + Dip(28), cardRc.top + Dip(52) };
         DrawTextW(hdc, L"H", -1, &lh, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+        HWND focus = ::GetFocus();
+        RECT rw = Vis(doc_.rcSegW[i]);
+        RECT rh = Vis(doc_.rcSegH[i]);
+        DrawRoundRect(hdc, rw, Dip(3), theme::ControlBackground,
+                      focus == segWidth_[i] ? theme::Accent : theme::PanelBorder, 1);
+        DrawRoundRect(hdc, rh, Dip(3), theme::ControlBackground,
+                      focus == segHeight_[i] ? theme::Accent : theme::PanelBorder, 1);
         if (segs[i].HasError()) {
             SelectObject(hdc, fontSmall_);
             SetTextColor(hdc, theme::Error);
@@ -1102,7 +1224,7 @@ void CMainWindow::PaintLayoutPicker(HDC hdc) {
         bool sel = (i == ctl_.SelectedLayoutIndex());
         COLORREF bg = sel ? theme::LayoutSelected : theme::WindowBackground;
         COLORREF bd = sel ? theme::Accent : RGB(0, 0, 0);
-        if (sel) DrawRoundRect(hdc, card, Dip(5), bg, bd, 2);
+        if (sel) DrawRoundRect(hdc, card, Dip(5), bg, bd, (std::max)(2, Dip(2)));
         RECT prev = { card.left + Dip(4), card.top + Dip(6), card.left + Dip(4) + Dip(140), card.top + Dip(6) + Dip(84) };
         DrawRoundRect(hdc, prev, Dip(3), theme::PreviewBackground, theme::PanelBorder, 1);
         const auto& boxes = layouts[i].PreviewBoxes;
@@ -1114,21 +1236,15 @@ void CMainWindow::PaintLayoutPicker(HDC hdc) {
             };
             zr.right = zr.left + (int)std::lround(b.W);
             zr.bottom = zr.top + (int)std::lround(b.H);
-            HBRUSH fill = CreateSolidBrush(theme::SegmentFill);
-            HPEN pen = CreatePen(PS_NULL, 0, 0);
-            HGDIOBJ oB = SelectObject(hdc, fill);
-            HGDIOBJ oP = SelectObject(hdc, pen);
-            RoundRect(hdc, zr.left, zr.top, zr.right, zr.bottom, Dip(2) * 2, Dip(2) * 2);
-            SelectObject(hdc, oB); SelectObject(hdc, oP);
-            DeleteObject(fill); DeleteObject(pen);
+            DrawRoundRect(hdc, zr, Dip(2), theme::SegmentFill, theme::SegmentFill, 0);
         }
         SelectObject(hdc, fontBody_);
         SetTextColor(hdc, theme::Foreground);
-        RECT nm = { card.left, prev.bottom + Dip(6), card.right, prev.bottom + Dip(24) };
+        RECT nm = { card.left + Dip(4), prev.bottom + Dip(6), card.right - Dip(4), prev.bottom + Dip(24) };
         DrawTextW(hdc, layouts[i].Name.c_str(), -1, &nm, DT_CENTER | DT_WORDBREAK);
         SelectObject(hdc, fontSmall_);
         SetTextColor(hdc, theme::Muted);
-        RECT ds = { card.left, nm.bottom, card.right, card.bottom };
+        RECT ds = { card.left + Dip(4), nm.bottom, card.right - Dip(4), card.bottom - Dip(2) };
         DrawTextW(hdc, layouts[i].Description.c_str(), -1, &ds, DT_CENTER | DT_WORDBREAK);
     }
 }
@@ -1240,6 +1356,18 @@ int CMainWindow::HitSplitter(int x, int y) const {
 
 bool CMainWindow::OnLButtonDown(UINT, WPARAM, LPARAM lp, LRESULT& lResult) {
     int x = GET_X_LPARAM(lp), y = GET_Y_LPARAM(lp);
+    for (int i = 0; i < doc_.segCount && i < 4; ++i) {
+        RECT rw = Vis(doc_.rcSegW[i]);
+        if (::PtInRect(&rw, POINT{ x, y }) && segWidth_[i] && ::IsWindowEnabled(segWidth_[i])) {
+            ::SetFocus(segWidth_[i]);
+            lResult = 0; return true;
+        }
+        RECT rh = Vis(doc_.rcSegH[i]);
+        if (::PtInRect(&rh, POINT{ x, y }) && segHeight_[i] && ::IsWindowEnabled(segHeight_[i])) {
+            ::SetFocus(segHeight_[i]);
+            lResult = 0; return true;
+        }
+    }
     int lay = HitLayout(x, y);
     if (lay >= 0 && ctl_.IsIdle()) {
         ctl_.SetSelectedLayoutIndex(lay);

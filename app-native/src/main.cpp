@@ -32,6 +32,9 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int nCmdShow) {
     icc.dwICC = ICC_STANDARD_CLASSES | ICC_WIN95_CLASSES;
     InitCommonControlsEx(&icc);
 
+    theme::InitAppDarkMode();
+    theme::InitGraphics();
+
     SetUnhandledExceptionFilter(CrashFilter);
 
     int argc = 0;
@@ -68,6 +71,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int nCmdShow) {
 
     Teardown();
     g_main = nullptr;
+    theme::ShutdownGraphics();
     if (SUCCEEDED(com)) CoUninitialize();
     return (int)msg.wParam;
 }

@@ -12,10 +12,7 @@ bool g_countdownKeep = false;
 bool g_countdownAnswered = false;
 
 void EnableDarkTitle(HWND hwnd) {
-    BOOL dark = TRUE;
-    // 20 = DWMWA_USE_IMMERSIVE_DARK_MODE (Win10 20H1+); 19 is the older value.
-    DwmSetWindowAttribute(hwnd, 20, &dark, sizeof(dark));
-    DwmSetWindowAttribute(hwnd, 19, &dark, sizeof(dark));
+    theme::EnableDarkTitleBar(hwnd);
 }
 
 HFONT UiFont(HWND hwnd, double size, int weight = FW_NORMAL) {
@@ -62,6 +59,8 @@ LRESULT CALLBACK CountdownProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         SendMessageW(st->number, WM_SETFONT, (WPARAM)st->fontNum, TRUE);
         SendMessageW(st->keep, WM_SETFONT, (WPARAM)st->fontTitle, TRUE);
         SendMessageW(st->revert, WM_SETFONT, (WPARAM)st->fontBody, TRUE);
+        theme::ApplyDarkExplorerTheme(st->keep);
+        theme::ApplyDarkExplorerTheme(st->revert);
         SetTimer(hwnd, 1, 1000, nullptr);
         return 0;
     }
@@ -236,7 +235,9 @@ LRESULT CALLBACK GuidedProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         CreateWindowExW(0, L"BUTTON", L"Cancel", WS_CHILD | WS_VISIBLE | WS_TABSTOP,
             310, 280, 110, 32, hwnd, (HMENU)3, cs->hInstance, nullptr);
         EnumChildWindows(hwnd, [](HWND c, LPARAM f) {
-            SendMessageW(c, WM_SETFONT, (WPARAM)f, TRUE); return TRUE;
+            SendMessageW(c, WM_SETFONT, (WPARAM)f, TRUE);
+            theme::ApplyDarkExplorerTheme(c);
+            return TRUE;
         }, (LPARAM)st->fontBody);
         return 0;
     }

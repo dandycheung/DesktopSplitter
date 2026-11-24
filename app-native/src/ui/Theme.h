@@ -36,5 +36,18 @@ inline int DipRound(double px, int dpi) { return (int)std::lround(px * dpi / 96.
 HFONT CreateUiFont(int dpi, double dipSize, int weight = FW_NORMAL, const wchar_t* face = L"Segoe UI");
 HFONT CreateMonoFont(int dpi, double dipSize, int weight = FW_NORMAL);
 
+// Windows 10/11 dark-mode hooks (uxtheme + DWM). Safe no-op on older builds.
+void InitAppDarkMode();
+void EnableDarkTitleBar(HWND hwnd);
+void ApplyDarkExplorerTheme(HWND hwnd);
+void ApplyDarkComboTheme(HWND combo);
+
+// GDI+ lifecycle and anti-aliased shape helpers.
+void InitGraphics();
+void ShutdownGraphics();
+void DrawRoundRectAA(HDC hdc, const RECT& rc, int radius, COLORREF fill, COLORREF border, int borderW = 1);
+void DrawCheckmarkAA(HDC hdc, const RECT& box, int strokeW, COLORREF color);
+void DrawDownArrowAA(HDC hdc, int cx, int cy, int width, int height, COLORREF color);
+
 } // namespace theme
 } // namespace ds
